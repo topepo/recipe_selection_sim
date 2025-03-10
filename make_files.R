@@ -17,13 +17,13 @@ template <- readLines("template.R")
 
 num_sim <- 20
 
-set.seed(1) # batch of 20 started on 2025-02-10
+set.seed(1) # batch of 20 started on 2025-02-11
 
 combinations <-
   crossing(
     num_extra = 10 * c(0, 2, 4, 6, 8, 10),
-    num_train = 3:6,
-    num_repeat = c(1, 3, 5),
+    num_train = seq(2.5, 4, by = 0.5),
+    num_repeat = c(1, 5),
     seed = sample.int(10000, num_sim)
   ) %>%
   mutate(
@@ -45,14 +45,22 @@ for (i in 1:nrow(combinations)) {
 
 # ------------------------------------------------------------------------------
 
-
+# Sometimes make tries to remake existing files so we find the R files and
+# exclude those with corresponding RData files
 existing <- list.files(path = "files", pattern = "*.*RData$")
 excluding <- gsub("Data$", "", existing)
 excluding <- gsub("^res", "sim", excluding)
-src_files <- list.files(path = "files", pattern = "*.*R$")
+
+# randomize within seed
+src_files <-
+  combinations %>%
+  slice_sample(n = nrow(combinations)) %>%
+  arrange(seed) %>%
+  pluck("file") %>%
+  basename()
+
 src_files <- src_files[!(src_files %in% excluding)]
 
-src_files <- sample(src_files)
 rda_files <- gsub("R$", "RData", src_files)
 
 # target_list <-
